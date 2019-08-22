@@ -1,0 +1,139 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta name="generator" content="Hexo 3.9.0"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="iOS 内存管理机制"><meta name="keywords" content="iOS"><meta name="author" content="范小忧"><meta name="copyright" content="范小忧"><title>iOS 内存管理机制 | 范小忧</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.6.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.6.1"><link rel="dns-prefetch" href="https://cdn.staticfile.org"><link rel="dns-prefetch" href="https://cdn.bootcss.com"><link rel="dns-prefetch" href="https://creativecommons.org"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  }
+} </script></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar"><div class="toggle-sidebar-info text-center"><span data-toggle="Toggle article">Toggle site</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是内存管理"><span class="toc-number">1.</span> <span class="toc-text">什么是内存管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#iOS-是如何管理内存"><span class="toc-number">2.</span> <span class="toc-text">iOS 是如何管理内存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#引用计数"><span class="toc-number">3.</span> <span class="toc-text">引用计数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#我们如何进行内存管理-——-MRC"><span class="toc-number">4.</span> <span class="toc-text">我们如何进行内存管理 —— MRC</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#自己生成的对象，自己持有"><span class="toc-number">4.1.</span> <span class="toc-text">自己生成的对象，自己持有</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#非自己生成的对象，自己也能持有"><span class="toc-number">4.2.</span> <span class="toc-text">非自己生成的对象，自己也能持有</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#不需要自己持有对象时释放"><span class="toc-number">4.3.</span> <span class="toc-text">不需要自己持有对象时释放</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#无法释放非自己持有的对象"><span class="toc-number">4.4.</span> <span class="toc-text">无法释放非自己持有的对象</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#更加智能的内存管理-——-ARC"><span class="toc-number">5.</span> <span class="toc-text">更加智能的内存管理 —— ARC</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#概要"><span class="toc-number">5.1.</span> <span class="toc-text">概要</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#所有权修饰符"><span class="toc-number">5.2.</span> <span class="toc-text">所有权修饰符</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ARC-规则"><span class="toc-number">5.3.</span> <span class="toc-text">ARC 规则</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Toll-Free-Bridging（免费桥）"><span class="toc-number">6.</span> <span class="toc-text">Toll-Free Bridging（免费桥）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#常见的内存管理问题"><span class="toc-number">7.</span> <span class="toc-text">常见的内存管理问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#如何检查内存泄漏问题"><span class="toc-number">8.</span> <span class="toc-text">如何检查内存泄漏问题</span></a></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="/img/avatar.png"></div><div class="author-info__name text-center">范小忧</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">6</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">3</span></a></div></div></div><div id="content-outer"><div class="no-bg" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">范小忧</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus"><a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span></div><div id="post-info"><div id="post-title">iOS 内存管理机制</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2019-08-07</time></div></div></div><div class="layout" id="content-inner"><article id="post"><div class="article-container" id="post-content"><p>看过 iOS 书籍和开发过苹果App的小伙伴们，都会去了解和学习 iOS的内存管理机制。那么今天我们就一起梳理下 Objective-C 中的内存管理机制。首先我们先看下下图，了解下我们从哪些方面学习！</p>
+<p><img src="/images/iOS%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6%E7%9F%A5%E8%AF%86%E7%82%B9.png" alt="iOS内存管理机制知识点"></p>
+<a id="more"></a>
+
+<h2 id="什么是内存管理"><a href="#什么是内存管理" class="headerlink" title="什么是内存管理"></a>什么是内存管理</h2><p>内存是我们运行程序锁必须的资源，但是内存是有限的，我们不能无休止的使用它；因此，我们需要对内存进行管理。在 iOS 中，我们通常将内存分为五大部分：</p>
+<ul>
+<li>代码区</li>
+<li>全局区/静态区</li>
+<li>文字常量区</li>
+<li>栈（Stack）</li>
+<li>堆（Heap）</li>
+</ul>
+<p>上面五大部分中，只有堆的内存是需要程序员手动管理的。所有今天我们学习的内存管理，管理的就是堆这部分的内存。</p>
+<h2 id="iOS-是如何管理内存"><a href="#iOS-是如何管理内存" class="headerlink" title="iOS 是如何管理内存"></a>iOS 是如何管理内存</h2><p>在 iOS 中，提供了 MRC（手动引用计数）和 ARC（自动引用计数）两种方式来进行内存管理的。而无论是哪种方式，它们的核心机制都是对引用计数的管理。那么是引用计数呢？下面我们简单描述下：</p>
+<h2 id="引用计数"><a href="#引用计数" class="headerlink" title="引用计数"></a>引用计数</h2><p>引用计数，说白了就是个数字。它的作用就是用来记录对象被引用了几次。如果说被引用了1次，那么引用计数就是1；如果说被引用了3次，那么引用计数就是3。那在 Objective-C 内存管理中，系统会去判断引用计数是否为0；若为0，就表示该对象没有被引用，那么系统就是自动释放它的内存；反之，若不为0，则该对象的内存不会被释放。</p>
+<h2 id="我们如何进行内存管理-——-MRC"><a href="#我们如何进行内存管理-——-MRC" class="headerlink" title="我们如何进行内存管理 —— MRC"></a>我们如何进行内存管理 —— MRC</h2><p>顾名思义，MRC就是调用 Objective-C 的方法（alloc/new/copy/mutableCopy/retain/release等）实现引用计数的增加和减少。规则如下：</p>
+<table>
+<thead>
+<tr>
+<th>对象操作</th>
+<th align="center">Objective-C 方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>生成并持有对象</td>
+<td align="center">alloc/new/copy/mutableCopy 等方法</td>
+</tr>
+<tr>
+<td>持有对象</td>
+<td align="center">retain  方法</td>
+</tr>
+<tr>
+<td>释放对象</td>
+<td align="center">release 方法</td>
+</tr>
+<tr>
+<td>销毁对象</td>
+<td align="center">dealloc 方法</td>
+</tr>
+</tbody></table>
+<p>对于引用计数的管理，我们可以理解为下面4个原则：</p>
+<ol>
+<li>自己生成的对象，自己所持有；</li>
+<li>非自己生成的对象，自己也可能持有；</li>
+<li>不再需要自己持有的对象时释放；</li>
+<li>非自己持有的对象无法释放。</li>
+</ol>
+<h3 id="自己生成的对象，自己持有"><a href="#自己生成的对象，自己持有" class="headerlink" title="自己生成的对象，自己持有"></a>自己生成的对象，自己持有</h3><p>使用以下名称开头的方法意味着自己生成的对象，自己持有。</p>
+<ul>
+<li>alloc</li>
+<li>new</li>
+<li>copy</li>
+<li>mutableCopy</li>
+</ul>
+<p>现在，我们可以看下面的代码：</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">id</span> obj1 = [[<span class="built_in">NSArray</span> alloc] init];   <span class="comment">// 生成并持有对象</span></span><br><span class="line"><span class="keyword">id</span> obj2 = [<span class="built_in">NSArray</span> array];          <span class="comment">// 生成对象并未持有</span></span><br></pre></td></tr></table></figure>
+
+<p>obj1 是通过 alloc 创建的所以对象自己是持有的；而 obj2 是通过类方法创建，对象本身是不持有的。这意味着 obj2 在后面的时候用过程中可能会出错。（原因是 array 方法内，使用了 autorelease 延迟了对象的销毁）</p>
+<h3 id="非自己生成的对象，自己也能持有"><a href="#非自己生成的对象，自己也能持有" class="headerlink" title="非自己生成的对象，自己也能持有"></a>非自己生成的对象，自己也能持有</h3><p>当我们使用非 alloc、new、copy、mutableCopy 方法来生成对象时，我们可以使用 retain 来持有对象。</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">id</span> obj = [<span class="built_in">NSArray</span> array];   <span class="comment">// 生成对象并未持有</span></span><br><span class="line">[obj <span class="keyword">retain</span>];               <span class="comment">// 持有对象</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="不需要自己持有对象时释放"><a href="#不需要自己持有对象时释放" class="headerlink" title="不需要自己持有对象时释放"></a>不需要自己持有对象时释放</h3><p>自己持有对象，一旦自己不要了，可以直接使用 release/autorelease 释放对象</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[obj release];      <span class="comment">// 引用计数减1。</span></span><br><span class="line">[obj autorelease];  <span class="comment">// 在auto release pool释放的时候，引用计数减1。</span></span><br></pre></td></tr></table></figure>
+
+<p>这里我们需要注意 autorelease 不会立即释放对象，而是在auto release pool释放的时候，统一释放自动释放池中所有需要释放的对象。</p>
+<p><img src="/images/release%E5%92%8Cautorelease%E7%9A%84%E5%8C%BA%E5%88%AB.png" alt="release和autorelease的区别"></p>
+<h3 id="无法释放非自己持有的对象"><a href="#无法释放非自己持有的对象" class="headerlink" title="无法释放非自己持有的对象"></a>无法释放非自己持有的对象</h3><p>不是自己所持有的对象，我们是无法使用 release/autorelease 释放的。</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">id</span> obj = [<span class="built_in">NSObject</span> new];    <span class="comment">// obj是持有对象的</span></span><br><span class="line">[obj release];              <span class="comment">// obj释放对象，不持有对象</span></span><br><span class="line">[obj release];              <span class="comment">// obj再次释放对象，这是会报错。</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="更加智能的内存管理-——-ARC"><a href="#更加智能的内存管理-——-ARC" class="headerlink" title="更加智能的内存管理 —— ARC"></a>更加智能的内存管理 —— ARC</h2><h3 id="概要"><a href="#概要" class="headerlink" title="概要"></a>概要</h3><p>顾名思义，自动引用计数是指内存管理中对引用采用自动计数的技术。在 Objective-C 中采用 ARC 机制，让编译器来进行内存管理，无需再次键入retain和release代码。</p>
+<p>好处：</p>
+<ul>
+<li>降低了程序奔溃、内存泄漏等风险；</li>
+<li>减少了开发程序的工作量；</li>
+<li>能够立即释放那些不再被使用的对象，提供了程序的整体性能。</li>
+</ul>
+<h3 id="所有权修饰符"><a href="#所有权修饰符" class="headerlink" title="所有权修饰符"></a>所有权修饰符</h3><p>ARC 下，id类型和对象类型同C语言的其他类型不同，其类型上必须附加所有权修饰符。所有权修饰符一共有4个，如下：</p>
+<ul>
+<li>__strong 修饰符</li>
+<li>__weak 修饰符</li>
+<li>__unsafe_unretained 修饰符</li>
+<li>__autoreleasing 修饰符</li>
+</ul>
+<p>__strong修饰符是id类型和对象类型默认的所有权修饰符。也就是说下面的源码中，id变量实际上被附加了所有权修饰符：</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">id</span> obj = [[<span class="built_in">NSObject</span> alloc] init];</span><br></pre></td></tr></table></figure>
+
+<p>id和对象类型在没有明确指定所有权修饰符时，默认为 __strong 修饰符。上述源码与下面源码是相同的。</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">id</span> __<span class="keyword">strong</span> obj = [[<span class="built_in">NSObject</span> alloc] init];</span><br></pre></td></tr></table></figure>
+
+<p>__weak修饰符不能持有对象实例，通常用来解决引用计数的循环引用问题；并且当引用的对象销毁时，弱引用将自动失效且处于nil被赋值状态。</p>
+<p>__unsafe_unretained 修饰符表示其修饰的变量不属于编译器的内存管理对象；附有 __unsafe_unretained 修饰符的变量同附有 __weak 修饰符的变量一样，都不会持有对象。</p>
+<p>__autoreleasing修饰符用来修饰自动释放池中创建的对象。</p>
+<p>在 MRC 中，我们是这样使用自动释放池的，源码如下：</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSAutoreleasePool</span> *pool = [[<span class="built_in">NSAutoreleasePool</span> alloc] init];</span><br><span class="line"><span class="keyword">id</span> obj = [[<span class="built_in">NSObject</span> alloc] init];</span><br><span class="line">[obj autorelease];</span><br><span class="line">[pool drain];</span><br></pre></td></tr></table></figure>
+
+<p>而在 ARC 中，我们的代码是这样子的：</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">@autoreleasepool</span> &#123;</span><br><span class="line">    <span class="keyword">id</span> __autoreleasing obj = [[<span class="built_in">NSObject</span> alloc] init];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="ARC-规则"><a href="#ARC-规则" class="headerlink" title="ARC 规则"></a>ARC 规则</h3><ul>
+<li>不能使用 retain/release/retainCount/autorelease</li>
+<li>不能使用 NSAllocateObject/NSDeallocateObject</li>
+<li>须遵守内存管理的方法命名规则</li>
+<li>不需要显式调用 dealloc</li>
+<li>使用@autorelease来代替NSAutoreleasePool</li>
+<li>不能使用区域（NSZone）</li>
+<li>对象类型变量不能作为C语言结构体（struct/union）的成员</li>
+<li>显式转换”id”和”Void *”</li>
+</ul>
+<h2 id="Toll-Free-Bridging（免费桥）"><a href="#Toll-Free-Bridging（免费桥）" class="headerlink" title="Toll-Free Bridging（免费桥）"></a>Toll-Free Bridging（免费桥）</h2><p>Toll-Free Bridging, 简称为TFB，是一种允许某些 ObjC 类与其对应的 CoreFoundation 类之间可以互换使用的机制。比如 NSString 与 CFString 是桥接(bridge)的, 这意味着可以将任意    NSString 当做 CFString 使用，也可以将任意的 CFString 当做 NSString 使用。</p>
+<p>转换的方式：</p>
+<ul>
+<li>__bridge：可以实现Objective-C对象和Core Foundation对象的相互转换，而且不会进行所有权的转换。</li>
+<li>__bridge_retained 或 CFBridgingRetain：只能将 Objective-C 对象转换为 Core Foundation 对象，同时将所有权交给CF对象；</li>
+<li>__bridge_transfer 或 CFBridgingRelease：只能将非 Objective-C 对象转换为 Objective-C 对象，同时将所有权交给ARC。</li>
+</ul>
+<p>在我们使用 Toll-Free Bridging 转换对象所有权时，也就意味着对象的内存管理机制发生了变化。Foundation 框架下，对象的内存管理是由系统自动管理的（ARC），而在 Core Foundation 框架下，系统的内存管理，需要程序员自己管理。</p>
+<h2 id="常见的内存管理问题"><a href="#常见的内存管理问题" class="headerlink" title="常见的内存管理问题"></a>常见的内存管理问题</h2><ul>
+<li>循环引用</li>
+<li>NSTimer 释放不当</li>
+<li>桥接导致所有权变化，而产生的内存管理问题</li>
+<li>使用循环产生大量局部变量，导致内存警告问题</li>
+</ul>
+<h2 id="如何检查内存泄漏问题"><a href="#如何检查内存泄漏问题" class="headerlink" title="如何检查内存泄漏问题"></a>如何检查内存泄漏问题</h2><ul>
+<li>僵尸对象图</li>
+<li>Leaks</li>
+</ul>
+</div></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">范小忧</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://heyor.github.io/2019/08/07/iOS内存管理机制/">https://heyor.github.io/2019/08/07/iOS内存管理机制/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/iOS/">iOS</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2019/08/13/Objective-C中Category真相/"><i class="fa fa-chevron-left">  </i><span>Objective-C 中 Category 真相</span></a></div><div class="next-post pull-right"><a href="/2019/08/05/iOS 事件的响应与分发/"><span>iOS 事件的响应与分发</span><i class="fa fa-chevron-right"></i></a></div></nav></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2013 - 2019 By 范小忧</div><div class="framework-info"><span>Driven - </span><a href="http://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file-o"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.6.1"></script><script src="/js/fancybox.js?version=1.6.1"></script><script src="/js/sidebar.js?version=1.6.1"></script><script src="/js/copy.js?version=1.6.1"></script><script src="/js/fireworks.js?version=1.6.1"></script><script src="/js/transition.js?version=1.6.1"></script><script src="/js/scroll.js?version=1.6.1"></script><script src="/js/head.js?version=1.6.1"></script><script>if(/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+}</script></body></html>
