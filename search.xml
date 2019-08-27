@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>Flutter 从零到1搭建第一个应用程序</title>
+      <link href="/2019/08/23/Flutter%E4%BB%8E%E9%9B%B6%E5%88%B01%E6%90%AD%E5%BB%BA%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F/"/>
+      <url>/2019/08/23/Flutter%E4%BB%8E%E9%9B%B6%E5%88%B01%E6%90%AD%E5%BB%BA%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F/</url>
+      
+        <content type="html"><![CDATA[<p>前面我们学习开发 Flutter 应用所需的编程语言 Dart。今天我们来一步一步介绍如何介绍如何创建 Flutter 应用程序。废话不多说，我们直接进入正题：</p><h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>Flutter 是 Google 推出并开源的移动应用开发框架，主打跨平台、高保真、高性能。开发者可以通过 Dart 语言开发 App，一套代码同时运行在 iOS 和 Android平台。 Flutter 提供了丰富的组件、接口，开发者可以很快地为 Flutter 添加 native 扩展。同时 Flutter 还使用 Native 引擎渲染视图，这无疑能为用户提供良好的体验。</p><a id="more"></a><p><strong>Flutter 的特点：</strong></p><ol><li>采用Dart语言开发，为什么不使用其他语言呢？因为Dart团队就在隔壁；</li><li>跨平台自绘引擎，Flutter使用Skia作为其2D渲染引擎；</li><li>高性能，Flutter APP采用Dart语言开发；而Dart语言不仅支持JIT（即时编译），还支持AOT；同时Flutter使用自己的渲染引擎来绘制UI，布局数据等由Dart语言直接控制。</li></ol><p><strong>Flutter框架结构</strong></p><p><img src="https://cdn.jsdelivr.net/gh/flutterchina/flutter-in-action/docs/imgs/1-1.png" alt></p><p>通过上图我们可以看出来，整体的框架分为Framework和Engine两大部分。 </p><p>Framework为我们提供了UI和用户交互能力。首先，底部的Foundation和Animation、Painting、Gestures为我们提供动画、手势、UI绘制和与Engine的交互能力。其次，Rendering层会根据我们编写Widget生成相应UI树，它类似于React中的虚拟DOM，是我们Flutter UI框架的核心；最后，也是我们日常开发中打交道最多的Widgets，我们可以把Widgets看成描述UI组件的配置，在Flutter中为我们提供了Material（安卓）和Cupertino（iOS）两种风格的Widgets。</p><p>Engine这是一个纯 C++实现的 SDK，其中包括了 Skia引擎、Dart运行时、文字排版引擎等。在代码调用 dart:ui库时，调用最终会走到Engine层，然后实现真正的绘制逻辑。</p><h1 id="搭建Flutter开发环境"><a href="#搭建Flutter开发环境" class="headerlink" title="搭建Flutter开发环境"></a>搭建Flutter开发环境</h1><p>阅读完上面我们已经大致了解了Flutter，那么下面我们就来搭建Flutter开发环境吧。由于我使用Mac电脑进行开发的，所有这里就以Mac为例。如果你是Windows或者Liunx，请移步<a href="https://flutter.dev/docs/get-started/install" target="_blank" rel="noopener">官网</a></p><h2 id="使用镜像"><a href="#使用镜像" class="headerlink" title="使用镜像"></a>使用镜像</h2><p>由于在国内访问Flutter有时可能会受到限制，Flutter官方为中国开发者搭建了临时镜像，我们可以将如下环境变量加入到用户环境变量（~/.zshrc或者~/.bash_profile）中：</p><figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PUB_HOSTED_URL=https://pub.flutter-io.cn</span><br><span class="line"><span class="built_in">export</span> FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn</span><br></pre></td></tr></table></figure><p><strong>注意： 此镜像为临时镜像，并不能保证一直可用，如果失效可以参考<a href="https://flutter.io/community/china" target="_blank" rel="noopener">https://flutter.io/community/china</a> 以获得有关镜像服务器的最新动态。</strong></p><h2 id="下载Flutter-SDK"><a href="#下载Flutter-SDK" class="headerlink" title="下载Flutter SDK"></a>下载Flutter SDK</h2><p>配置完镜像之后，我们可以去<a href="https://flutter.dev/docs/development/tools/sdk/releases" target="_blank" rel="noopener">官网下载</a>，并将解压安装包；也可以使用Git来下载，Git命令如下：</p><figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> -b master https://github.com/flutter/flutter.git</span><br></pre></td></tr></table></figure><p><strong>注意：无论是解压还是Git克隆的SDK，我们都需要记住flutter文件夹的路径。</strong></p><p><img src="/images/2019082301.jpg" alt></p><h2 id="更新环境变量"><a href="#更新环境变量" class="headerlink" title="更新环境变量"></a>更新环境变量</h2><p>有了Flutter SDK后，我们还需要将<code>export PATH=$HOME/flutter/bin:$PATH</code>加入到用户环境变量（~/.zshrc或者~/.bash_profile）中，才能正常使用：</p><p><img src="/images/2019082302.jpg" alt></p><p><strong>注意：这里的<code>$HOME/flutter</code>就是我们<code>flutter文件夹的路径</code>，你完全可以替换成你电脑上的路径。</strong></p><p>配置完成之后，我们可以使用<code>flutter version</code>来检查我们的环境变量是否配置成功了；如果终端打印如下，则表示配置成功了：</p><p><img src="/images/2019082303.jpg" alt></p><h2 id="运行-flutter-doctor命令"><a href="#运行-flutter-doctor命令" class="headerlink" title="运行 flutter doctor命令"></a>运行 flutter doctor命令</h2><p>如果上述步骤一切顺利的话，我们离成功配置完环境就只有一部之遥（吐槽下这一部需要的东西还挺多的）。我们先在终端中运行<code>$ flutter doctor</code>，结果类似于下图：</p><p><img src="/images/2019082304.jpg" alt></p><p>其中Flutter、Android toolchain、Xcode、Android Studio和Connected device必需和上图一样安装成功；IntelliJ IDEA Ultimate Edition和VS Code不是必需的，如果你想用这两种开发工具进行开发，那么就需要安装成功了。下面我就来解释下为什么有的需要安装，有的则不一定需要。</p><ol><li>Flutter：代表Flutter SDK，所以必须要安装（你不装试试！）；</li><li>Android toolchain：安卓编译器，其实不想装也行；后果就是代码不能在安卓上奔跑；</li><li>Xcode：iOS开发工具，自带编译器和模拟器；如果你还是不想装，那我只能说别闹了；</li><li>Android Studio、IntelliJ IDEA Ultimate Edition和VS Code三者你只需要安装一个就行了，它们都是开发工具，无论用哪个都能开发。我建议安装Android Studio，因为这样我们安装Android toolchain比较方便，但是真的卡（很卡很卡）；</li><li>Connected device：连接设备，真机模拟都行；基本上安装上述后，会默认安装成功的（Xcode自带模拟器）。</li></ol><br>说了那么多，我们基本上就知道了那些是我们需要安装的，下面我们就来一步步安装：<ol><li>下载Xcode，去App Store下载即可，记得下载完一定要打开下哦；<br><img src="/images/2019082305.jpg" alt></li><li><a href="http://www.android-studio.org" target="_blank" rel="noopener">下载 Android Studio</a>，并根据安装引导下载Android SDK；</li><li>打开Android Studio，下载Dart和Flutter插件；<br><img src="/images/2019082306.jpg" alt></li></ol><h1 id="创建一个-Flutter-App"><a href="#创建一个-Flutter-App" class="headerlink" title="创建一个 Flutter App"></a>创建一个 Flutter App</h1><ol><li>打开 Android Studio，选择<code>Start a new Flutter project</code>;<br><img src="/images/2019082701.jpg" alt></li><li>选择 <code>Flutter Application</code>，然后点击’下一步’;<br><img src="/images/2019082702.jpg" alt></li><li>填写项目名称、存储路径，然后点击’下一步’;<br><img src="/images/2019082703.jpg" alt></li><li>若需要支持 Swift 或 Kotlin 可以选择，若没有特殊需求；则直接点击<code>Finish</code>,即可完成项目的创建。<br><img src="/images/2019082704.jpg" alt></li></ol><h1 id="项目的目录结构"><a href="#项目的目录结构" class="headerlink" title="项目的目录结构"></a>项目的目录结构</h1><img src="/images/2019082705.jpg" width="400"><ol><li>lib: 存放我们编写的 dart 文件的地方，其中<code>main.dart</code>文件是App的整体入口；</li><li>android: 存放与安卓相关的东西；</li><li>ios: 存放与苹果相关的东西；</li><li>pubspec.ymal: 包管理，资源配置文件。</li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> Flutter </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Flutter </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Dart 中的类</title>
       <link href="/2019/08/21/Dart%E7%B1%BB/"/>
       <url>/2019/08/21/Dart%E7%B1%BB/</url>
