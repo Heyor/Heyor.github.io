@@ -4,6 +4,25 @@
   
     
     <entry>
+      <title>State 的生命周期</title>
+      <link href="/2019/08/30/State%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
+      <url>/2019/08/30/State%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+      
+        <content type="html"><![CDATA[<p>前言：生命周期对于一个移动开发者来说并不陌生，它使我们精通移动开发的必修课。对于 Flutter 来说也是必不可缺少的。在 Flutter 中我们需要关注的是<strong>App的生命周期</strong>和<strong>StatefulWidget的生命周期</strong>；今天我们详细的了学习下<strong>StatefulWidget的生命周期</strong>。</p><p><img src="/images/statelifecycle.png" alt></p><p>通过上图我们可以认为 StatefulWidget 的生命周期大致分为</p><ol><li>初始化阶段：<code>createState</code> =&gt; <code>initState</code> =&gt; <code>didChangeDependencies</code> =&gt; <code>build</code>;</li><li>界面刷新阶段：<code>setState</code>  =&gt; <code>build</code> 或者 <code>inheritedWidget rebuild</code> =&gt; <code>didChangeDependencies</code> =&gt; <code>build</code> 或者 <code>didUpdateWidget</code> =&gt; <code>didChangeDependencies</code>;</li><li>销毁阶段：<code>deactivite</code> =&gt; <code>dispose</code>。</li></ol><a id="more"></a><p>下面我们介绍下各方法都在什么时候调用？</p><ul><li>initState(): state create之后被insert到tree时调用的</li><li>didChangeDependencies():<ol><li>初始化时，在initState()之后立刻调用</li><li>当依赖的InheritedWidget rebuild,会触发此接口被调用</li></ol></li><li>build():<ol><li>didChangeDependencies() 调用之后</li><li>didUpdateWidget() 调用之后</li><li>使用 setState() 更新状态之后</li></ol></li><li>didUpdateWidget(): 父先节点rebuild widget时调用</li><li>deactivate():Widget被remove的时候调用，一个Widget从tree中remove掉，可以在dispose接口被调用前，重新instert到一个新tree中</li><li>dispose():Widget彻底销毁时调用</li></ul>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> Flutter </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Flutter 从零到1搭建第一个应用程序</title>
       <link href="/2019/08/23/Flutter%E4%BB%8E%E9%9B%B6%E5%88%B01%E6%90%AD%E5%BB%BA%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F/"/>
       <url>/2019/08/23/Flutter%E4%BB%8E%E9%9B%B6%E5%88%B01%E6%90%AD%E5%BB%BA%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F/</url>
