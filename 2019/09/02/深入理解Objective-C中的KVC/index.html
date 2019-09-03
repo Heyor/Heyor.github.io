@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta name="generator" content="Hexo 3.9.0"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="深入理解Objective-C中的KVC"><meta name="keywords" content="iOS"><meta name="author" content="范小忧"><meta name="copyright" content="范小忧"><title>深入理解Objective-C中的KVC | 范小忧的博客</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.6.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.6.1"><link rel="dns-prefetch" href="https://cdn.staticfile.org"><link rel="dns-prefetch" href="https://cdn.bootcss.com"><link rel="dns-prefetch" href="https://creativecommons.org"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><link rel="manifest" href="/manifest.json"><link rel="manifest" href="/manifest.json"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  }
+} </script></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar"><div class="author-info"><div class="author-info__avatar text-center"><img src="/images/yjtp.jpeg"></div><div class="author-info__name text-center">范小忧</div><div class="author-info__description text-center"></div><div class="follow-button"><a href="https://github.com/Heyor">Follow Me</a></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">文章</span><span class="pull-right">9</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">标签</span><span class="pull-right">2</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">分类</span><span class="pull-right">3</span></a></div></div></div><div id="content-outer"><div id="top-container" style="background-image: url(/images/xk.jpeg)"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">范小忧的博客</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> 搜索</span></a><a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span></div><div id="post-info"><div id="post-title">深入理解Objective-C中的KVC</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2019-09-02</time><div class="post-meta-wordcount"><span>字数总计: </span><span class="word-count">1.1k</span><span class="post-meta__separator">|</span><span>阅读时长: 4 分钟</span></div></div></div></div><div class="layout" id="content-inner"><article id="post"><div class="article-container" id="post-content"><p>KeyValueCoding 键值编码模式，为我们提供使用 key 来访问和赋值对象属性的一种方式；利用Objective-C中的Runtime机制实现的；它是我们实现 KVO 的基础。</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 首先我们定义如下Person类</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Person</span> : <span class="title">NSObject</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>  ) <span class="built_in">NSString</span>  *name;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Person</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 使用 KeyValueCoding 来访问和赋值 person 实例对象中的 name 属性</span></span><br><span class="line">Person *person = [[Person alloc] init];</span><br><span class="line">[person setValue:<span class="string">@"eric"</span> forKey:<span class="string">@"name"</span>];</span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"person name =&gt; %@"</span>, [person valueForKey:<span class="string">@"name"</span>]);</span><br></pre></td></tr></table></figure>
+
+<p>运行代码，控制台会打印: <code>2019-09-03 14:58:48.566826+0800 KeyValueCoding[96466:3583190] person name =&gt; eric</code></p>
+<a id="more"></a>
+
+<h1 id="常用的方法："><a href="#常用的方法：" class="headerlink" title="常用的方法："></a>常用的方法：</h1><p>通过上面小实例，我们简单的了解如何使用 KeyValueCoding 来访问和赋值对象的属性；下面我们来介绍下常用 KeyValueCoding 的方法。</p>
+<h2 id="赋值相关："><a href="#赋值相关：" class="headerlink" title="赋值相关："></a>赋值相关：</h2><ul>
+<li><code>- (void)setValue:(nullable id)value forKey:(NSString *)key;</code></li>
+<li><code>- (void)setValue:(nullable id)value forKeyPath:(NSString *)keyPath;</code></li>
+<li><code>- (void)setValue:(nullable id)value forUndefinedKey:(NSString *)key;</code></li>
+<li><code>- (void)setNilValueForKey:(NSString *)key;</code></li>
+<li><code>- (void)setValuesForKeysWithDictionary:(NSDictionary&lt;NSString *, id&gt; *)keyedValues;</code></li>
+</ul>
+<h2 id="取值相关："><a href="#取值相关：" class="headerlink" title="取值相关："></a>取值相关：</h2><ul>
+<li><code>- (nullable id)valueForKey:(NSString *)key;</code></li>
+<li><code>- (nullable id)valueForKeyPath:(NSString *)keyPath;</code></li>
+<li><code>- (nullable id)valueForUndefinedKey:(NSString *)key;</code></li>
+<li><code>- (NSDictionary&lt;NSString *, id&gt; *)dictionaryWithValuesForKeys:(NSArray&lt;NSString *&gt; *)keys;</code></li>
+</ul>
+<h2 id="其他方法："><a href="#其他方法：" class="headerlink" title="其他方法："></a>其他方法：</h2><ul>
+<li><code>+ (BOOL)accessInstanceVariablesDirectly;</code>: 判断是否可以访问对象的成员变量，默认为YES；</li>
+<li><code>- (BOOL)validateValue:(inout id _Nullable * _Nonnull)ioValue forKey:(NSString *)inKey error:(out NSError **)outError;</code>: 用来验证 ioVale 是否可以保存到 inKey 中去；需要验证时，可以重写该方法；默认返回YES；</li>
+<li><code>- (BOOL)validateValue:(inout id _Nullable * _Nonnull)ioValue forKeyPath:(NSString *)inKeyPath error:(out NSError **)outError</code></li>
+</ul>
+<p>这些方法都在 NSObject 中的 NSKeyValueCoding 的分类中，苹果处理为我们提供了 NSObject 的 NSKeyValueCoding 分类外，NSArray、NSDictionary、NSMutableDictionary、NSOrderedSet、NSSet都会有 NSKeyValueCoding 分类。</p>
+<h1 id="KeyValueCoding-赋值时，如何寻找”Key”并赋值"><a href="#KeyValueCoding-赋值时，如何寻找”Key”并赋值" class="headerlink" title="KeyValueCoding 赋值时，如何寻找”Key”并赋值?"></a>KeyValueCoding 赋值时，如何寻找”Key”并赋值?</h1><ol>
+<li>先寻找是否有 setKey 方法</li>
+<li>调用<code>+ (BOOL)accessInstanceVariablesDirectly</code>类方法；若返回NO，直接执行步骤6；若返回YES，继续执行下面步骤，</li>
+<li>寻找”_key”成员变量；若有，则直接赋值结束</li>
+<li>寻找”_isKey”成员变量；若有，则直接赋值结束</li>
+<li>寻找”isKey”成员变量；若有，则直接赋值结束</li>
+<li>调用<code>- (void)setValue:(id)value forUndefinedKey:(NSString *)key</code>后直接结束；若没有该方法，则crash。</li>
+</ol>
+<h1 id="KeyValueCoding-取值时，如何寻找”Key”取值？"><a href="#KeyValueCoding-取值时，如何寻找”Key”取值？" class="headerlink" title="KeyValueCoding 取值时，如何寻找”Key”取值？"></a>KeyValueCoding 取值时，如何寻找”Key”取值？</h1><ol>
+<li>先按照顺序寻找是否有 getKey、key、isKey、_key 中的任意一个方法，若有则直接调用并结束</li>
+<li>若没有找到步骤1中的任意一个方法，则会寻找 countOf、objectInKeyAtIndexes或者keyAtIndexes</li>
+<li>若还是没有找到步骤2中的方法；则会继续寻找 countOf、enumeratorOf、memberOf</li>
+<li>若没有找到步骤3中的方法，调用<code>+ (BOOL)accessInstanceVariablesDirectly</code>类方法；若返回NO，直接执行步骤6；若返回YES，继续执行下面步骤，</li>
+<li>按照 _key、_isKey、key、isKey 的顺序寻找成员变量是否存在，若存在则直接获取值并结束</li>
+<li>上述步骤中的方法或者成员变量都没有找到，则会调用 <code>- (id)valueForUndefinedKey:(NSString *)key</code> 方法，若没有实现该方法，则会 Crash。</li>
+</ol>
+<h1 id="使用-KeyValueCoding-操作集合"><a href="#使用-KeyValueCoding-操作集合" class="headerlink" title="使用 KeyValueCoding 操作集合"></a>使用 KeyValueCoding 操作集合</h1><h2 id="高级消息的转发"><a href="#高级消息的转发" class="headerlink" title="高级消息的转发"></a>高级消息的转发</h2><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSArray</span> *names = @[<span class="string">@"eirc"</span>, <span class="string">@"area"</span>, <span class="string">@"abc"</span>];</span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"length =&gt; %@"</span>, [names valueForKey:<span class="string">@"length"</span>]);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 控制台打印</span></span><br><span class="line"><span class="comment">// 2019-09-03 14:58:48.567124+0800 KeyValueCoding[96466:3583190] length =&gt; (</span></span><br><span class="line"><span class="comment">//    4,</span></span><br><span class="line"><span class="comment">//    4,</span></span><br><span class="line"><span class="comment">//    3</span></span><br><span class="line"><span class="comment">// )</span></span><br></pre></td></tr></table></figure>
+
+<p>根据上述实例代码，我们使用了 KVC 来获取数组中字符串的长度。除了 length 可以这样使用外，下面属性也可以这样用：</p>
+<ul>
+<li>uppercaseString</li>
+<li>lowercaseString</li>
+<li>capitalizedString</li>
+<li>floatValue</li>
+<li>boolValue</li>
+</ul>
+<h2 id="操作符"><a href="#操作符" class="headerlink" title="操作符"></a>操作符</h2><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSArray</span> *nums = @[<span class="string">@"1"</span>, <span class="string">@"0"</span>, <span class="string">@"3"</span>];</span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"sum =&gt; %@"</span>, [nums valueForKeyPath:<span class="string">@"@sum.floatValue"</span>]);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 控制台打印</span></span><br><span class="line"><span class="comment">// 2019-09-03 15:31:03.734481+0800 KeyValueCoding[96930:3658965] sum =&gt; 4</span></span><br></pre></td></tr></table></figure>
+
+<p>根据上述实例代码，我们使用了 KVC 中<code>- (nullable id)valueForKeyPath:(NSString *)keyPath;</code>方法来计算数组中所有字符串的和。这里的Key一定要写成<code>@sum.floatValue</code>的形式，表示我们将数组中的字符串转化成NSNumber并求和。除了求和运算我们还以进行下面代码中的运算：</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"sum =&gt; %@"</span>, [nums valueForKeyPath:<span class="string">@"@min.intValue"</span>]);</span><br><span class="line"><span class="comment">// 控制台打印</span></span><br><span class="line"><span class="comment">// 2019-09-03 15:40:08.296041+0800 KeyValueCoding[97071:3683163] min =&gt; 1</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"max =&gt; %@"</span>, [nums valueForKeyPath:<span class="string">@"@max.intValue"</span>]);</span><br><span class="line"><span class="comment">// 控制台打印</span></span><br><span class="line"><span class="comment">// 2019-09-03 15:40:42.787196+0800 KeyValueCoding[97106:3686298] max =&gt; 3</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"avg =&gt; %@"</span>, [nums valueForKeyPath:<span class="string">@"@avg.intValue"</span>]);</span><br><span class="line"><span class="comment">// 控制台打印</span></span><br><span class="line"><span class="comment">// 2019-09-03 15:41:43.800606+0800 KeyValueCoding[97130:3691048] avg =&gt; 2</span></span><br></pre></td></tr></table></figure>
+
+<p>关于KVC的集合操作符您可以观看 <strong><a href="https://nshipster.cn/kvc-collection-operators/" target="_blank" rel="noopener">KVC Collection Operators</a></strong> 这篇文章。</p>
+<h1 id="使用-KeyValueCoding-的常见场景："><a href="#使用-KeyValueCoding-的常见场景：" class="headerlink" title="使用 KeyValueCoding 的常见场景："></a>使用 KeyValueCoding 的常见场景：</h1><ol>
+<li>动态地取值和赋值；</li>
+<li>访问和修改私有变量；</li>
+<li>字典和模型转换；</li>
+<li>操作集合；</li>
+<li>KVC是KVO的基础。</li>
+</ol>
+</div></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">范小忧</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://heyor.github.io/2019/09/02/深入理解Objective-C中的KVC/">https://heyor.github.io/2019/09/02/深入理解Objective-C中的KVC/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="undefined">MIT</a> 许可协议。转载请注明来自 <a href="https://heyor.github.io">范小忧的博客</a>！</span></div></div><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/iOS/">iOS</a></div><div class="social-share" data-disabled="google, facebook, twitter, weibo, douban"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css"><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><nav id="pagination"><div class="next-post pull-right"><a href="/2019/08/30/State的生命周期/"><span>State 的生命周期</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: 'f3ba493026670dc3f967',
+  clientSecret: '3df210d20e423f8f67103769d41735e4801a543d',
+  repo: 'heyor.github.io',
+  owner: 'Heyor',
+  admin: 'Heyor',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer class="footer-bg" style="background-image: url(/images/xk.jpeg)"><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2019 By 范小忧</div><div class="framework-info"><span>驱动 - </span><a href="http://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file-o"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.6.1"></script><script src="/js/fancybox.js?version=1.6.1"></script><script src="/js/sidebar.js?version=1.6.1"></script><script src="/js/copy.js?version=1.6.1"></script><script src="/js/fireworks.js?version=1.6.1"></script><script src="/js/transition.js?version=1.6.1"></script><script src="/js/scroll.js?version=1.6.1"></script><script src="/js/head.js?version=1.6.1"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"><div class="local-search-stats__hr" id="hr"><span>由</span> <a href="https://github.com/wzpan/hexo-generator-search" style="color:#49B1F5;">hexo-generator-search</a>
+ <span>提供支持</span></div></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>
